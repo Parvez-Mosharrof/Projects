@@ -1,6 +1,6 @@
-#define BLYNK_TEMPLATE_ID "................"
-#define BLYNK_TEMPLATE_NAME "......."
-#define BLYNK_AUTH_TOKEN "............................"
+#define BLYNK_TEMPLATE_ID "TMPL6ywAefThD"
+#define BLYNK_TEMPLATE_NAME "ppp"
+#define BLYNK_AUTH_TOKEN "-m0ZDhwAkbnNG4uogr75Sb_wQmPyksn_"
 
 #include <WiFi.h>
 #include <BlynkSimpleEsp32.h>
@@ -8,8 +8,8 @@
 #include <LiquidCrystal.h>
 
 // WiFi credentials
-char ssid[] = ".....";
-char pass[] = ".......";
+char ssid[] = "parvez";
+char pass[] = "parvezzahid";
 
 BlynkTimer timer;
 Servo myServo;
@@ -46,6 +46,7 @@ BLYNK_WRITE(V3)
   if (autoMode == 0) { // Manual mode only
     servoPos = param.asInt();
     myServo.write(servoPos);
+  }
 }
 
 // Mode select (V4) Auto / Manual
@@ -58,46 +59,75 @@ BLYNK_WRITE(V4)
 // ------------------- SENSOR + DISPLAY -------------------
 void sendSensor()
 {
-  int valueL = analogRead(LDR_LEFT);
-  int valueR = analogRead(LDR_RIGHT);
+  int  man= analogRead(SOLAR_PIN);
+  double volt = (man * 3.5) / 4095.0;
+   volt =volt*3.8 ;
+   double amp; 
+  double a;
+   if(volt <2)
+    {
+      a=0.05;
+    }
+else if(volt <3)
+    {
+      a=0.06;
+    }
+else if(volt <4)
+    {
+      a=0.07;
+    }
+else if(volt <5)
+     {
+      a=0.08;
+     } 
+ else if(volt <6)
+     {
+       a=0.9;
+     }
+   else
+     {
+       a=0.1;
+     }
 
-  int solar = analogRead(SOLAR_PIN);
-  solar = map(solar, 0, 4095, 0, 7);  // ESP32 ADC range fix
+ amp=volt*a;
 
   // Send to Blynk
-  Blynk.virtualWrite(V1, solar);
-  Blynk.virtualWrite(V2, solar * 0.1);
+  Blynk.virtualWrite(V1, volt);
+  Blynk.virtualWrite(V2, amp);
 
   // LCD Display update
   lcd.setCursor(0, 1);
   lcd.print("                "); // clear old data
   lcd.setCursor(0, 1);
-  lcd.print("Volt=");
-  lcd.print(solar);
-  lcd.print(" Amp=");
-  lcd.print(solar * 0.1);
+  lcd.print("Volt:");
+  lcd.print(volt);
+  
+  lcd.print(" Amp:");
+  lcd.print(amp);
+
 
 }
 
 // ------------------- SUN TRACKER -------------------
-void sunTracker()
-{
+void sunTracker() {
   if (autoMode == 1) {
     int valueL = analogRead(LDR_LEFT);
     int valueR = analogRead(LDR_RIGHT);
 
-    int diff = valueL - valueR;
+    int offset =-50; // চাইলে +50 বা -50 দিয়ে টেস্ট করো
+    int diff = (valueR - valueL) + offset;
 
-    // Dead zone to prevent shaking
-    if (abs(diff) > 100) {
-      if (diff > 0 && servoPos < 180) {
-        servoPos++;
-      } else if (diff < 0 && servoPos > 0) {
-        servoPos--;
+    if (abs(diff) > 200) {   // Dead zone বড় করা হলো
+      int step = 1;
+      if (diff > 0 && servoPos < 170) {
+        servoPos += step; 
+      } else if (diff < 0 && servoPos > 10) {
+        servoPos -= step; 
       }
       myServo.write(servoPos);
     }
 
+    
   }
 }
 
@@ -125,3 +155,4 @@ void loop()
   Blynk.run();
   timer.run();
 }
+
